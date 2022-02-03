@@ -241,7 +241,7 @@ public class LocalSessions
             TableId tid = entry.getKey();
             RepairedState state = getRepairedState(tid);
             state.add(entry.getValue());
-    	    }
+        }
     }
 
     /**

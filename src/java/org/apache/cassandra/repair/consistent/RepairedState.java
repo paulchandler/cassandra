@@ -247,8 +247,8 @@ public class RepairedState
 
 	private void processLevels(List<Level> tmp) {
 
-		List<Level> levels = new ArrayList<>(tmp.size() );
-		List<Range<Token>> covered = new ArrayList<>();
+        List<Level> levels = new ArrayList<>(tmp.size() );
+        List<Range<Token>> covered = new ArrayList<>();
 
         for (Level level : tmp)
         {

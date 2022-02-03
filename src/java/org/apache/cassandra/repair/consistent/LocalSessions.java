@@ -353,7 +353,7 @@ public class LocalSessions
         Map<UUID, LocalSession> loadedSessions = new HashMap<>();
         for (UntypedResultSet.Row row : rows)
         {
-             try
+            try
             {
                 LocalSession session = load(row);
                 maybeUpdateRepairedState(session);

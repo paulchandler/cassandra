@@ -41,9 +41,6 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.UUIDGen;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.apache.cassandra.service.ActiveRepairService.UNREPAIRED_SSTABLE;
 
 /**
@@ -234,8 +231,8 @@ public class RepairedState
     {
         Level newLevel = new Level(ranges, repairedAt);
         initalLevels.add(newLevel);
-    	
     }
+
     public void finaliseInitalLevels()
     {
         State lastState = state;

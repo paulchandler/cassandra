@@ -213,32 +213,35 @@ public class LocalSessions
 
     private void maybeUpdateRepairedState(LocalSession session)
     {
-        if (session.getState() != FINALIZED)
-            return;
-
-        // if the session is finalized but has repairedAt set to 0, it was
-        // a forced repair, and we shouldn't update the repaired state
-        if (session.repairedAt == ActiveRepairService.UNREPAIRED_SSTABLE)
+        if (!shouldStoreSession(session))
             return;
 
         for (TableId tid : session.tableIds)
         {
             RepairedState state = getRepairedState(tid);
             // During initial start up batch the data together and process it later 
-            if (!started)
-           		state.storeInitialLevel(session.ranges, session.repairedAt);
-            else
-            		state.add(session.ranges, session.repairedAt);
+            state.add(session.ranges, session.repairedAt);
         }
+    }
+
+    private boolean shouldStoreSession(LocalSession session)
+    {
+        if (session.getState() != FINALIZED)
+            return false;
+
+        // if the session is finalized but has repairedAt set to 0, it was
+        // a forced repair, and we shouldn't update the repaired state
+        if (session.repairedAt == ActiveRepairService.UNREPAIRED_SSTABLE)
+            return false;
+        return true;
     }
     private void finaliseStates( Map<TableId, List<RepairedState.Level>> initialLevels)
     {
-    		for (Map.Entry<TableId, List<RepairedState.Level>> entry : initialLevels.entrySet()) {
+        for (Map.Entry<TableId, List<RepairedState.Level>> entry : initialLevels.entrySet()) {
     		    TableId tid = entry.getKey();
-            RepairedState state = getRepairedState(tid);
+    		    RepairedState state = getRepairedState(tid);
             state.add(entry.getValue());
-    		    
-    		}
+    	    }
     }
 
     /**
@@ -362,18 +365,17 @@ public class LocalSessions
             {
                 LocalSession session = load(row);
                 loadedSessions.put(session.sessionID, session);
-                for (TableId tid : session.tableIds)
+                if (!shouldStoreSession(session)) 
                 {
-                    RepairedState.Level level = new RepairedState.Level(session.ranges, session.repairedAt);
-                    List<RepairedState.Level> tableLevels = initialLevels.get(tid);
-                    if (tableLevels == null) {
-                        tableLevels = new LinkedList<RepairedState.Level>();
-                        initialLevels.put(tid, tableLevels);
+                    for (TableId tid : session.tableIds)
+                    {
+                        if (!initialLevels.containsKey(tid))
+                            initialLevels.put(tid, new LinkedList<RepairedState.Level>());
+                        List<RepairedState.Level> tableLevels = Verify.verifyNotNull(initialLevels.get(tid));
+                        RepairedState.Level level = new RepairedState.Level(session.ranges, session.repairedAt);
+                        tableLevels.add(level);
                     }
-                    tableLevels.add(level);
                 }
-
-                loadedSessions.put(session.sessionID, session);
             }
             catch (IllegalArgumentException | NullPointerException e)
             {

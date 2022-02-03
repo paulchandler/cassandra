@@ -219,7 +219,6 @@ public class LocalSessions
         for (TableId tid : session.tableIds)
         {
             RepairedState state = getRepairedState(tid);
-            // During initial start up batch the data together and process it later 
             state.add(session.ranges, session.repairedAt);
         }
     }
@@ -237,9 +236,10 @@ public class LocalSessions
     }
     private void finaliseStates( Map<TableId, List<RepairedState.Level>> initialLevels)
     {
-        for (Map.Entry<TableId, List<RepairedState.Level>> entry : initialLevels.entrySet()) {
-    		    TableId tid = entry.getKey();
-    		    RepairedState state = getRepairedState(tid);
+        for (Map.Entry<TableId, List<RepairedState.Level>> entry : initialLevels.entrySet()) 
+        {
+            TableId tid = entry.getKey();
+            RepairedState state = getRepairedState(tid);
             state.add(entry.getValue());
     	    }
     }

@@ -56,8 +56,6 @@ import static org.apache.cassandra.service.ActiveRepairService.UNREPAIRED_SSTABL
  */
 public class RepairedState
 {
-  private static final Logger logger = LoggerFactory.getLogger(RepairedState.class);
-
     static class Level
     {
         final List<Range<Token>> ranges;
@@ -240,7 +238,6 @@ public class RepairedState
     }
     public void finaliseInitalLevels()
     {
- 
         State lastState = state;
 
         List<Level> levels = new ArrayList<>(lastState.levels.size() + initalLevels.size());
@@ -254,7 +251,6 @@ public class RepairedState
 	private void processLevels(List<Level> tmp) {
 
 		List<Level> levels = new ArrayList<>(tmp.size() );
-
 		List<Range<Token>> covered = new ArrayList<>();
 
         for (Level level : tmp)
@@ -278,8 +274,6 @@ public class RepairedState
             }
         }
         sections.sort(Section.tokenComparator);
-        
-        
 
         state = new State(levels, covered, sections);
         

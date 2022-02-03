@@ -111,7 +111,9 @@ import static org.apache.cassandra.repair.consistent.ConsistentSession.State.*;
  */
 public class LocalSessions
 {
+//    private static final java.util.logging.Logger logger = LoggerFactory.getLogger(LocalSessions.class);
     private static final Logger logger = LoggerFactory.getLogger(LocalSessions.class);
+
     private static final Set<Listener> listeners = new CopyOnWriteArraySet<>();
 
     /**
@@ -223,8 +225,18 @@ public class LocalSessions
         for (TableId tid : session.tableIds)
         {
             RepairedState state = getRepairedState(tid);
-            state.add(session.ranges, session.repairedAt);
+            // During initial start up batch the data together and process it later 
+            if (!started)
+           		state.storeInitialLevel(session.ranges, session.repairedAt);
+            else
+            		state.add(session.ranges, session.repairedAt);
         }
+    }
+    private void finaliseStates( )
+    {
+    		for (Map.Entry<TableId, RepairedState> entry : repairedStates.entrySet()) {
+    			entry.getValue().finaliseInitalLevels();
+    		}
     }
 
     /**
@@ -339,10 +351,17 @@ public class LocalSessions
     {
         Preconditions.checkArgument(!started, "LocalSessions.start can only be called once");
         Preconditions.checkArgument(sessions.isEmpty(), "No sessions should be added before start");
+        logger.info("In Start method");
         UntypedResultSet rows = QueryProcessor.executeInternalWithPaging(String.format("SELECT * FROM %s.%s", keyspace, table), 1000);
         Map<UUID, LocalSession> loadedSessions = new HashMap<>();
+        
+        Integer rowcount = 0;
         for (UntypedResultSet.Row row : rows)
         {
+        	    rowcount++;
+        	    if (rowcount % 1000 == 0)
+        	    		logger.info("Reading row {} ", rowcount);
+            
             try
             {
                 LocalSession session = load(row);
@@ -356,6 +375,10 @@ public class LocalSessions
                     deleteRow(row.getUUID("parent_id"));
             }
         }
+        logger.info("Read all rows");
+        finaliseStates();
+        logger.info("States all finalised");
+        
         sessions = ImmutableMap.copyOf(loadedSessions);
         failOngoingRepairs();
         started = true;

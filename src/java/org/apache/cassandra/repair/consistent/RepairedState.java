@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -40,6 +41,9 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.UUIDGen;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.apache.cassandra.service.ActiveRepairService.UNREPAIRED_SSTABLE;
 
 /**
@@ -52,6 +56,8 @@ import static org.apache.cassandra.service.ActiveRepairService.UNREPAIRED_SSTABL
  */
 public class RepairedState
 {
+  private static final Logger logger = LoggerFactory.getLogger(RepairedState.class);
+
     static class Level
     {
         final List<Range<Token>> ranges;
@@ -200,6 +206,7 @@ public class RepairedState
     }
 
     private volatile State state = new State(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    private volatile List<Level>  initalLevels = new LinkedList<>();
 
     State state()
     {
@@ -219,20 +226,36 @@ public class RepairedState
         sections.sort(Section.tokenComparator);
         return sections;
     }
-
-    public synchronized void add(Collection<Range<Token>> ranges, long repairedAt)
+    /**
+     * Create and store a Level, this should be used during start up, and the finaliseInitalLevels should be called 
+     * 
+     * @param ranges
+     * @param repairedAt
+     */
+    public void storeInitialLevel(Collection<Range<Token>> ranges, long repairedAt)
     {
         Level newLevel = new Level(ranges, repairedAt);
-
+        initalLevels.add(newLevel);
+    	
+    }
+    public void finaliseInitalLevels()
+    {
+ 
         State lastState = state;
 
-        List<Level> tmp = new ArrayList<>(lastState.levels.size() + 1);
-        tmp.addAll(lastState.levels);
-        tmp.add(newLevel);
-        tmp.sort(Level.timeComparator);
+        List<Level> levels = new ArrayList<>(lastState.levels.size() + initalLevels.size());
+        levels.addAll(lastState.levels);
+        levels.addAll(initalLevels);
+        levels.sort(Level.timeComparator);
 
-        List<Level> levels = new ArrayList<>(lastState.levels.size() + 1);
-        List<Range<Token>> covered = new ArrayList<>();
+        processLevels(levels);
+    }
+
+	private void processLevels(List<Level> tmp) {
+
+		List<Level> levels = new ArrayList<>(tmp.size() );
+
+		List<Range<Token>> covered = new ArrayList<>();
 
         for (Level level : tmp)
         {
@@ -255,9 +278,26 @@ public class RepairedState
             }
         }
         sections.sort(Section.tokenComparator);
+        
+        
 
         state = new State(levels, covered, sections);
-    }
+        
+	}
+    public synchronized void add(Collection<Range<Token>> ranges, long repairedAt)
+    {
+        Level newLevel = new Level(ranges, repairedAt);
+
+        State lastState = state;
+
+        List<Level> tmp = new ArrayList<>(lastState.levels.size() + 1);
+        tmp.addAll(lastState.levels);
+        tmp.add(newLevel);
+        tmp.sort(Level.timeComparator);
+
+        processLevels(tmp);
+
+     }
 
     public long minRepairedAt(Collection<Range<Token>> ranges)
     {

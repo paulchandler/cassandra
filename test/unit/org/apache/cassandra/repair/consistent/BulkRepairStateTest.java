@@ -19,6 +19,7 @@ package org.apache.cassandra.repair.consistent;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.cassandra.dht.Murmur3Partitioner;
@@ -28,7 +29,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
-/*
+
 public class BulkRepairStateTest {
 	   private static Token tk(long t)
 	    {
@@ -76,25 +77,24 @@ public class BulkRepairStateTest {
 	    public void mergeOverlapping()
 	    {
 	        RepairedState repairs = new RepairedState();
-
-	        repairs.storeInitialLevel(ranges(100, 300), 5);
-	        repairs.storeInitialLevel(ranges(200, 400), 6);
-	        repairs.finaliseInitalLevels();
+	        List<RepairedState.Level> list = new LinkedList<RepairedState.Level>();
+            list.add( new RepairedState.Level(ranges(100, 300), 5 ));
+            list.add( new RepairedState.Level(ranges(200, 400), 6 ));
+	        repairs.add(list);
 
 	        RepairedState.State state = repairs.state();
 	        Assert.assertEquals(l(level(ranges(200, 400), 6), level(ranges(100, 200), 5)), state.levels);
 	        Assert.assertEquals(l(sect(range(100, 200), 5), sect(range(200, 400), 6)), state.sections);
 	        Assert.assertEquals(ranges(100, 400), state.covered);
 	    }
-
 	    @Test
 	    public void mergeSameRange()
 	    {
 	        RepairedState repairs = new RepairedState();
-
-	        repairs.storeInitialLevel(ranges(100, 400), 5);
-	        repairs.storeInitialLevel(ranges(100, 400), 6);
-	        repairs.finaliseInitalLevels();
+            List<RepairedState.Level> list = new LinkedList<RepairedState.Level>();
+            list.add( new RepairedState.Level(ranges(100, 400), 5 ));
+            list.add( new RepairedState.Level(ranges(100, 400), 6 ));
+            repairs.add(list);
 
 	        RepairedState.State state = repairs.state();
 	        Assert.assertEquals(l(level(ranges(100, 400), 6)), state.levels);
@@ -107,9 +107,10 @@ public class BulkRepairStateTest {
 	    {
 	        RepairedState repairs = new RepairedState();
 
-	        repairs.storeInitialLevel(ranges(200, 300), 5);
-	        repairs.storeInitialLevel(ranges(100, 400), 6);
-	        repairs.finaliseInitalLevels();
+            List<RepairedState.Level> list = new LinkedList<RepairedState.Level>();
+            list.add( new RepairedState.Level(ranges(200, 300), 5 ));
+            list.add( new RepairedState.Level(ranges(100, 400), 6 ));
+            repairs.add(list);
 
 	        RepairedState.State state = repairs.state();
 	        Assert.assertEquals(l(level(ranges(100, 400), 6)), state.levels);
@@ -122,9 +123,10 @@ public class BulkRepairStateTest {
 	    {
 	        RepairedState repairs = new RepairedState();
 
-	        repairs.storeInitialLevel(ranges(100, 400), 5);
-	        repairs.storeInitialLevel(ranges(200, 300), 6);
-	        repairs.finaliseInitalLevels();
+	        List<RepairedState.Level> list = new LinkedList<RepairedState.Level>();
+	        list.add( new RepairedState.Level(ranges(100, 400), 5 ));
+            list.add( new RepairedState.Level(ranges(200, 300), 6 ));
+            repairs.add(list);
 
 	        RepairedState.State state = repairs.state();
 	        Assert.assertEquals(l(level(ranges(200, 300), 6), level(ranges(100, 200, 300, 400), 5)), state.levels);
@@ -140,9 +142,10 @@ public class BulkRepairStateTest {
 
 	        // overlapping
 	        rs = new RepairedState();
-	        rs.storeInitialLevel(ranges(100, 300), 5);
-	        rs.storeInitialLevel(ranges(200, 400), 6);
-	        rs.finaliseInitalLevels();
+            List<RepairedState.Level> list = new LinkedList<RepairedState.Level>();
+            list.add( new RepairedState.Level(ranges(100, 300), 5 ));
+            list.add( new RepairedState.Level(ranges(200, 400), 6 ));
+            rs.add(list);
 
 	        Assert.assertEquals(5, rs.minRepairedAt(ranges(150, 250)));
 	        Assert.assertEquals(5, rs.minRepairedAt(ranges(150, 160)));
@@ -157,4 +160,4 @@ public class BulkRepairStateTest {
 
 
 }
-*/
+

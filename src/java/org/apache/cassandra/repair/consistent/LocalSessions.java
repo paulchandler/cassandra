@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -230,10 +231,13 @@ public class LocalSessions
             		state.add(session.ranges, session.repairedAt);
         }
     }
-    private void finaliseStates( )
+    private void finaliseStates( Map<TableId, List<RepairedState.Level>> initialLevels)
     {
-    		for (Map.Entry<TableId, RepairedState> entry : repairedStates.entrySet()) {
-    			entry.getValue().finaliseInitalLevels();
+    		for (Map.Entry<TableId, List<RepairedState.Level>> entry : initialLevels.entrySet()) {
+    		    TableId tid = entry.getKey();
+            RepairedState state = getRepairedState(tid);
+            state.add(entry.getValue());
+    		    
     		}
     }
 
@@ -351,12 +355,24 @@ public class LocalSessions
         Preconditions.checkArgument(sessions.isEmpty(), "No sessions should be added before start");
         UntypedResultSet rows = QueryProcessor.executeInternalWithPaging(String.format("SELECT * FROM %s.%s", keyspace, table), 1000);
         Map<UUID, LocalSession> loadedSessions = new HashMap<>();
+        Map<TableId, List<RepairedState.Level>> initialLevels = new HashMap<>();
         for (UntypedResultSet.Row row : rows)
         {
             try
             {
                 LocalSession session = load(row);
-                maybeUpdateRepairedState(session);
+                loadedSessions.put(session.sessionID, session);
+                for (TableId tid : session.tableIds)
+                {
+                    RepairedState.Level level = new RepairedState.Level(session.ranges, session.repairedAt);
+                    List<RepairedState.Level> tableLevels = initialLevels.get(tid);
+                    if (tableLevels == null) {
+                        tableLevels = new LinkedList<RepairedState.Level>();
+                        initialLevels.put(tid, tableLevels);
+                    }
+                    tableLevels.add(level);
+                }
+
                 loadedSessions.put(session.sessionID, session);
             }
             catch (IllegalArgumentException | NullPointerException e)
@@ -366,7 +382,7 @@ public class LocalSessions
                     deleteRow(row.getUUID("parent_id"));
             }
         }
-        finaliseStates();
+        finaliseStates(initialLevels);
         
         sessions = ImmutableMap.copyOf(loadedSessions);
         failOngoingRepairs();

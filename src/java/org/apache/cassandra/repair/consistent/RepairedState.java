@@ -233,18 +233,18 @@ public class RepairedState
         initalLevels.add(newLevel);
     }
 
-    public void finaliseInitalLevels()
+    public void add( List<Level> newLevels)
     {
         State lastState = state;
 
-        List<Level> levels = new ArrayList<>(lastState.levels.size() + initalLevels.size());
+        List<Level> levels = new ArrayList<>(lastState.levels.size() + newLevels.size());
         levels.addAll(lastState.levels);
-        levels.addAll(initalLevels);
+        levels.addAll(newLevels);
         levels.sort(Level.timeComparator);
 
         processLevels(levels);
     }
-
+    
 	private void processLevels(List<Level> tmp) {
 
         List<Level> levels = new ArrayList<>(tmp.size() );

@@ -201,7 +201,6 @@ public class RepairedState
     }
 
     private volatile State state = new State(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
-    private volatile List<Level>  initalLevels = new LinkedList<>();
 
     State state()
     {
@@ -221,18 +220,6 @@ public class RepairedState
         sections.sort(Section.tokenComparator);
         return sections;
     }
-    /**
-     * Create and store a Level, this should be used during start up, and the finaliseInitalLevels should be called 
-     * 
-     * @param ranges
-     * @param repairedAt
-     */
-    public void storeInitialLevel(Collection<Range<Token>> ranges, long repairedAt)
-    {
-        Level newLevel = new Level(ranges, repairedAt);
-        initalLevels.add(newLevel);
-    }
-
     public void add( List<Level> newLevels)
     {
         State lastState = state;
@@ -278,16 +265,10 @@ public class RepairedState
     public synchronized void add(Collection<Range<Token>> ranges, long repairedAt)
     {
         Level newLevel = new Level(ranges, repairedAt);
-
-        State lastState = state;
-
-        List<Level> tmp = new ArrayList<>(lastState.levels.size() + 1);
-        tmp.addAll(lastState.levels);
-        tmp.add(newLevel);
-        tmp.sort(Level.timeComparator);
-
-        processLevels(tmp);
-
+        List<Level> levels = new LinkedList<Level>();
+        levels.add(newLevel);
+        add(levels);
+ 
      }
 
     public long minRepairedAt(Collection<Range<Token>> ranges)

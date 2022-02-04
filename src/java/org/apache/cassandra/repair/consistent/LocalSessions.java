@@ -365,7 +365,7 @@ public class LocalSessions
             {
                 LocalSession session = load(row);
                 loadedSessions.put(session.sessionID, session);
-                if (!shouldStoreSession(session)) 
+                if (shouldStoreSession(session)) 
                 {
                     for (TableId tid : session.tableIds)
                     {
